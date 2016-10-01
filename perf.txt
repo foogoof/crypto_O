@@ -1,0 +1,15 @@
+;; clojure 1.8
+(with-progress-reporting (bench (aes/expand-key zeros) :verbose))
+Evaluation count : 5580 in 60 samples of 93 calls.
+      Execution time sample mean : 10.715367 ms
+             Execution time mean : 10.715851 ms
+Execution time sample std-deviation : 473.207767 µs
+    Execution time std-deviation : 481.788524 µs
+   Execution time lower quantile : 10.439083 ms ( 2.5%)
+   Execution time upper quantile : 11.955983 ms (97.5%)
+                   Overhead used : 9.174515 ns
+
+Found 11 outliers in 60 samples (18.3333 %)
+	low-severe	 2 (3.3333 %)
+	low-mild	 9 (15.0000 %)
+ Variance from outliers : 31.9019 % Variance is moderately inflated by outliers
