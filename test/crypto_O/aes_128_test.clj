@@ -76,5 +76,8 @@
 
 (deftest test-encrypting-zeros
   (testing "encrypting zeros with zeros"
-    (Arrays/fill input (int 0))
+    (Arrays/fill input (int 30))
+    (core/trace "input" input)
+    (core/trace "key" input)
+    (core/trace "output" (encrypt-data input input))
     (is (= 1 (encrypt-data input input)))))

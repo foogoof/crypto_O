@@ -29,8 +29,6 @@
                 (* (math/expt 2 bits) byte))))
 
 (defn byte-xor [lhs rhs]
-  (trace "lhs" lhs)
-  (trace "rhs" rhs)
   (reduce (fn [memo index]
             (aset-int memo
                       index

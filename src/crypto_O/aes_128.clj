@@ -52,7 +52,8 @@
       (core/byte-xor key)))
 
 (defn get-key [bytes key-index]
-  (Arrays/copyOfRange bytes (* 4 key-index) 16))
+  (let [starting-index (* 16 key-index)]
+   (Arrays/copyOfRange bytes starting-index (+ 16 starting-index))))
 
 (defn encrypt-data [key data]
   (let [raw-state (Arrays/copyOf data 16)
@@ -62,7 +63,7 @@
                   (early-round memo (get-key keys round-index)))
                 initial-state
                 (range 1 10))
-        (last-round (get-key 10)))))
+        (last-round (get-key keys 10)))))
 
 (defn expand-key [input]
   (let [output (int-array (* 11 16))]
