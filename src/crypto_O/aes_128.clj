@@ -24,7 +24,7 @@
 
 (defn s-box-rotate [s_x _]
   (let [{:keys [s x]} s_x
-        s-prime (bit-or (core/byte-shift-left s 1) (bit-shift-right s 7))]
+        s-prime (bit-or (core/byte-shift-left s 1) (core/byte-shift-right s 7))]
     {:s s-prime
      :x (bit-xor x s-prime)}))
 
