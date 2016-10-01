@@ -41,6 +41,34 @@
             1
             (range input 1 -1))))
 
+(defn mix-column [column]
+  (let [a (int-array 4)
+        b (int-array 4)]
+    (doseq [index (range 4)]
+      (aset-int a index (aget column index))
+      (aset-int b index (multiply (aget column index) 2)))
+    (aset-int column 0 (bit-xor (aget b 0)
+                                (aget a 3)
+                                (aget a 2)
+                                (aget b 1)
+                                (aget a 1)))
+    (aset-int column 1 (bit-xor (aget b 1)
+                                (aget a 0)
+                                (aget a 3)
+                                (aget b 2)
+                                (aget a 2)))
+    (aset-int column 2 (bit-xor (aget b 2)
+                                (aget a 1)
+                                (aget a 0)
+                                (aget b 3)
+                                (aget a 3)))
+    (aset-int column 3 (bit-xor (aget b 3)
+                                (aget a 2)
+                                (aget a 1)
+                                (aget b 0)
+                                (aget a 0)))
+    column))
+
 (def atable [0x01 0xe5 0x4c 0xb5 0xfb 0x9f 0xfc 0x12 
              0x03 0x34 0xd4 0xc4 0x16 0xba 0x1f 0x36 
              0x05 0x5c 0x67 0x57 0x3a 0xd5 0x21 0x5a 

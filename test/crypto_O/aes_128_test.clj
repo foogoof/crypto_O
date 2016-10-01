@@ -73,3 +73,8 @@
   (testing "expanding the menchito key"
     (is (Arrays/equals menchito-expanded
                        (expand-key (int-array [0x69 0x20 0xe2 0x99 0xa5 0x20 0x2a 0x6d 0x65 0x6e 0x63 0x68 0x69 0x74 0x6f 0x2a]))))))
+
+(deftest test-encrypting-zeros
+  (testing "encrypting zeros with zeros"
+    (Arrays/fill input (int 0))
+    (is (= 1 (encrypt-data input input)))))

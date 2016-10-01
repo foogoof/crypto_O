@@ -28,6 +28,17 @@
   (int (bit-and 0xff
                 (* (math/expt 2 bits) byte))))
 
+(defn byte-xor [lhs rhs]
+  (trace "lhs" lhs)
+  (trace "rhs" rhs)
+  (reduce (fn [memo index]
+            (aset-int memo
+                      index
+                      (bit-xor (aget lhs index) (aget rhs index)))
+            memo)
+          (int-array (count lhs))
+          (range (count lhs))))
+
 (defn rotate [four-byte-array]
   (let [shunt (aget four-byte-array 0)]
     (doseq [index (range 1 4)
@@ -35,3 +46,27 @@
       (aset-int four-byte-array (dec index) value))
     (aset-int four-byte-array 3 shunt)
     four-byte-array))
+
+(defn- extract-column [bytes row-index]
+  (let [column (int-array 4)]
+    (doseq [column-index (range 4)
+            :let [scalar-index (+ row-index (* 4 column-index))]]
+      (aset-int column
+                column-index
+                (aget bytes scalar-index)))
+    column))
+
+(defn bytes-to-columns [bytes]
+  (map (fn [row-index]
+         (extract-column bytes row-index))
+       (range 4)))
+
+(defn columns-to-bytes [columns]
+  (let [bytes (int-array 16)]
+    (doseq [column-index (range 4)
+            row-index (range 4)
+            :let [column (nth columns column-index)
+                  scalar-index (+ row-index (* 4 column-index))
+                  value (aget column row-index)]]
+      (aset-int bytes scalar-index value))
+    bytes))

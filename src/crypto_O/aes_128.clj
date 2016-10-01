@@ -9,11 +9,60 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (ns crypto_O.aes-128
+  (:import [java.util Arrays])
   (:require [crypto_O.core :as core]
             [crypto_O.galois-field :as galois])
   (:refer-clojure))
 
-(declare expand-key-inner)
+(declare expand-key expand-key-inner s-box)
+
+(defn substitute-bytes [bytes]
+  (reduce (fn [memo index]
+            (aset-int memo index (s-box (aget memo index)))
+            memo)
+          (int-array (count bytes))
+          (range (count bytes))))
+
+(defn shift-rows [bytes]
+  (let [row0 (int-array (Arrays/copyOfRange bytes 0 4))
+        row1 (int-array (Arrays/copyOfRange bytes 4 8))
+        row2 (int-array (Arrays/copyOfRange bytes 8 12))
+        row3 (int-array (Arrays/copyOfRange bytes 12 16))]
+    (doseq [row [row1 row2 row2 row3 row3 row3]]
+      (core/rotate row))
+    (int-array (concat row0 row1 row2 row3))))
+
+(defn mix-columns [bytes]
+  (let [columns (core/bytes-to-columns bytes)]
+    (doseq [index (range 4)]
+      (galois/mix-column (nth columns index)))
+    (core/columns-to-bytes columns)))
+
+(defn early-round [bytes key]
+  (-> bytes
+      substitute-bytes
+      shift-rows
+      mix-columns
+      (core/byte-xor key)))
+
+(defn last-round [bytes key]
+  (-> bytes
+      substitute-bytes
+      shift-rows
+      (core/byte-xor key)))
+
+(defn get-key [bytes key-index]
+  (Arrays/copyOfRange bytes (* 4 key-index) 16))
+
+(defn encrypt-data [key data]
+  (let [raw-state (Arrays/copyOf data 16)
+        keys  (expand-key data)
+        initial-state (core/byte-xor raw-state (get-key keys 0))]
+    (-> (reduce (fn [memo round-index]
+                  (early-round memo (get-key keys round-index)))
+                initial-state
+                (range 1 10))
+        (last-round (get-key 10)))))
 
 (defn expand-key [input]
   (let [output (int-array (* 11 16))]

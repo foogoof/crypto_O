@@ -1,5 +1,16 @@
-;; clojure 1.8
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(use 'criterium.core)
+(def zeros (int-array 16))
+(java.util.Arrays/fill zeros (int 0))
+(require '[crypto_O.aes-128 :as aes])
 (with-progress-reporting (bench (aes/expand-key zeros) :verbose))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; clojure 1.8
+
 Evaluation count : 5580 in 60 samples of 93 calls.
       Execution time sample mean : 10.715367 ms
              Execution time mean : 10.715851 ms
@@ -13,3 +24,20 @@ Found 11 outliers in 60 samples (18.3333 %)
 	low-severe	 2 (3.3333 %)
 	low-mild	 9 (15.0000 %)
  Variance from outliers : 31.9019 % Variance is moderately inflated by outliers
+
+;; clojure 1.9
+
+Evaluation count : 5640 in 60 samples of 94 calls.
+      Execution time sample mean : 10.708085 ms
+             Execution time mean : 10.708410 ms
+Execution time sample std-deviation : 59.679754 µs
+    Execution time std-deviation : 60.328829 µs
+   Execution time lower quantile : 10.627213 ms ( 2.5%)
+   Execution time upper quantile : 10.844804 ms (97.5%)
+                   Overhead used : 9.164309 ns
+
+Found 1 outliers in 60 samples (1.6667 %)
+	low-severe	 1 (1.6667 %)
+ Variance from outliers : 1.6389 % Variance is slightly inflated by outliers
+
+
