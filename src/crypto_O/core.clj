@@ -18,6 +18,14 @@
   [msg thing]
   (println (apply str msg " " (map #(format "%02x" %) thing))))
 
+(defn trace-buffer [msg buffer]
+  (let [shunt (short-array (.limit buffer))
+        clone (.duplicate buffer)]
+    (.rewind clone)
+    (.get clone shunt)
+    (println (format "length: %d position: %d" (.limit buffer) (.position buffer)))
+    (trace msg shunt)))
+
 (defn byte-shift-right [byte bits]
   (bit-and 0xff
            (int (/ byte

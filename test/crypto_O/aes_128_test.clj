@@ -7,6 +7,7 @@
 
 (def test-input (core/fast-buffer bytes-per-key))
 (def test-key (core/fast-buffer bytes-per-key))
+(def test-shunt (short-array (* 11 bytes-per-key)))
 
 (def zeros-expanded (ShortBuffer/wrap (short-array [0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
                                                     0x62 0x63 0x63 0x63 0x62 0x63 0x63 0x63 0x62 0x63 0x63 0x63 0x62 0x63 0x63 0x63
@@ -58,23 +59,24 @@
 
 (deftest test-expand-zeros
   (testing "expanding the zero key"
+    (.clear test-key)
     (.put test-key (short-array (repeat (short 0) bytes-per-key)))
-    (is (Arrays/equals zeros-expanded (expand-key test-key)))))
+    (is (.equals zeros-expanded (expand-key test-key)))))
 
-;; (deftest test-expand-ones
-;;   (testing "expanding the all one key"
-;;     (Arrays/fill input (int 0xFF))
-;;     (is (Arrays/equals ones-expanded (expand-key input)))))
+(deftest test-expand-ones
+  (testing "expanding the all one key"
+    (let [key (ShortBuffer/wrap (short-array [0xff 0xff 0xff 0xff 0xff 0xff 0xff 0xff 0xff 0xff 0xff 0xff 0xff 0xff 0xff 0xff]))]
+     (is (.equals ones-expanded (expand-key key))))))
 
-;; (deftest test-expand-sequence
-;;   (testing "expanding the sequence key"
-;;     (is (Arrays/equals sequence-expanded
-;;                        (expand-key (int-array [0x00 0x01 0x02 0x03 0x04 0x05 0x06 0x07 0x08 0x09 0x0a 0x0b 0x0c 0x0d 0x0e 0x0f]))))))
+(deftest test-expand-sequence
+  (testing "expanding the sequence key"
+    (is (.equals sequence-expanded
+                 (expand-key (ShortBuffer/wrap (short-array [0x00 0x01 0x02 0x03 0x04 0x05 0x06 0x07 0x08 0x09 0x0a 0x0b 0x0c 0x0d 0x0e 0x0f])))))))
 
-;; (deftest test-expand-menchito ;; who's menchito?
-;;   (testing "expanding the menchito key"
-;;     (is (Arrays/equals menchito-expanded
-;;                        (expand-key (int-array [0x69 0x20 0xe2 0x99 0xa5 0x20 0x2a 0x6d 0x65 0x6e 0x63 0x68 0x69 0x74 0x6f 0x2a]))))))
+(deftest test-expand-menchito ;; who's menchito?
+  (testing "expanding the menchito key"
+    (is (.equals menchito-expanded
+                 (expand-key (ShortBuffer/wrap (short-array [0x69 0x20 0xe2 0x99 0xa5 0x20 0x2a 0x6d 0x65 0x6e 0x63 0x68 0x69 0x74 0x6f 0x2a])))))))
 
 #_(deftest test-roundtrip
   (testing "decrypting encryption"

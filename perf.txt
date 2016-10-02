@@ -40,4 +40,18 @@ Found 1 outliers in 60 samples (1.6667 %)
 	low-severe	 1 (1.6667 %)
  Variance from outliers : 1.6389 % Variance is slightly inflated by outliers
 
+;; clojure 1.9 w/ ShortBuffer
 
+Evaluation count : 6660 in 60 samples of 111 calls.
+      Execution time sample mean : 9.150638 ms
+             Execution time mean : 9.151202 ms
+Execution time sample std-deviation : 59.047473 µs
+    Execution time std-deviation : 59.862739 µs
+   Execution time lower quantile : 9.069351 ms ( 2.5%)
+   Execution time upper quantile : 9.290812 ms (97.5%)
+                   Overhead used : 9.173622 ns
+
+Found 3 outliers in 60 samples (5.0000 %)
+	low-severe	 3 (5.0000 %)
+ Variance from outliers : 1.6389 % Variance is slightly inflated by outliers
+ 

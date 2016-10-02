@@ -1,16 +1,17 @@
 (ns crypto_O.core-test
-  (:import [java.util Arrays])
+  (:import [java.util Arrays]
+           [java.nio ShortBuffer])
   (:require [clojure.test :refer :all]
             [crypto_O.core :refer :all]))
 
 (deftest test-rotate
   (testing "Rotating 4 bytes left"
-    (let [input (int-array [1 2 3 4])
+    (let [input (ShortBuffer/wrap (short-array [1 2 3 4]))
           output (rotate input)]
-      (is (and (= (aget output 0) 2)
-               (= (aget output 1) 3)
-               (= (aget output 2) 4)
-               (= (aget output 3) 1))))))
+      (is (and (= (.get output 0) 2)
+               (= (.get output 1) 3)
+               (= (.get output 2) 4)
+               (= (.get output 3) 1))))))
 
 (deftest test-four-byte-xor
   (testing "smoketest xoring 4 bytes"

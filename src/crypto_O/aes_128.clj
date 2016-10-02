@@ -126,7 +126,8 @@
   (schedule-core-loop state)
   (.put state
         0
-        (bit-xor (.get state 0) (galois/rcon index))))
+        (bit-xor (.get state 0) (galois/rcon index)))
+  (.rewind state))
 
 (defn write-key [output output-position state]
   (doseq [state-index (range 4)
@@ -139,21 +140,26 @@
               (bit-xor state-val output-val))))
 
 (defn refresh-state [state round-keys]
-  (let [shunt (short-array 4)]
-    (.rewind state)
-    (.position round-keys (- (.position round-keys) 4))
-    (.get round-keys shunt)
-    (.put state shunt)))
+  (.rewind state)
+  (.position round-keys (- (.position round-keys) 4))
+  (doseq [_ (range 4)]
+    (.put state (.get round-keys)))
+  (.rewind state))
 
 (defn write-partial-key [round-keys state]
-  (doseq [_ (range 4)]
+  (let [write-index (.position round-keys)]
     (.rewind state)
-    (.put round-keys
-          (short (bit-xor (.get state) (.get round-keys))))))
+    (doseq [index (range 4)
+            :let [read-index (- (.position round-keys) 16)]]
+      (.put round-keys
+            (+ write-index index)
+            (short (bit-xor (.get state index) (.get round-keys (+ index read-index))))))
+    (.position round-keys (+ 4 (.position round-keys)))))
+
 
 (defn expand-key-inner [key round-keys]
   (let [state (core/fast-buffer 4)]
-    (doseq [_ (range 1 11)]
+    (doseq [_ (range 0 40)]
       (refresh-state state round-keys)
       (if (= 0 (mod (.position round-keys) 16))
         (schedule-core state (/ (.position round-keys) 16)))
