@@ -38,32 +38,45 @@
       (galois/mix-column (nth columns index)))
     (core/columns-to-bytes columns)))
 
-(defn early-round [bytes key]
+(defn encrypt-first-rounds [bytes key]
   (-> bytes
       substitute-bytes
       shift-rows
       mix-columns
       (core/byte-xor key)))
 
-(defn last-round [bytes key]
+(defn encrypt-last-round [bytes key]
   (-> bytes
       substitute-bytes
       shift-rows
       (core/byte-xor key)))
 
+(defn decrypt-first-round [byte key])
+
+(defn decrypt-last-rounds [byte key])
+
 (defn get-key [bytes key-index]
   (let [starting-index (* 16 key-index)]
    (Arrays/copyOfRange bytes starting-index (+ 16 starting-index))))
 
-(defn encrypt-data [key data]
+(defn encrypt [key data]
   (let [raw-state (Arrays/copyOf data 16)
-        keys  (expand-key data)
+        keys  (expand-key key)
         initial-state (core/byte-xor raw-state (get-key keys 0))]
     (-> (reduce (fn [memo round-index]
-                  (early-round memo (get-key keys round-index)))
+                  (encrypt-first-rounds memo (get-key keys round-index)))
                 initial-state
                 (range 1 10))
-        (last-round (get-key keys 10)))))
+        (encrypt-last-round (get-key keys 10)))))
+
+(defn decrypt [key data]
+  (let [raw-state (Arrays/copyOf data 16)
+        keys (int-array (reverse (expand-key key))) ; FIXME: can't be good for perf
+        initial-state (core/byte-xor raw-state (get-key keys 0))]
+    (reduce (fn [prior-round current-round-index]
+              (decrypt-last-rounds prior-round (get-key keys current-round-index)))
+            (decrypt-first-round initial-state (get-key keys 1))
+            (range 2 11))))
 
 (defn expand-key [input]
   (let [output (int-array (* 11 16))]
