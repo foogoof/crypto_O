@@ -9,6 +9,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (ns crypto_O.core
+  (:import [java.nio ByteBuffer ShortBuffer]
+           [java.util Arrays])
   (:require [clojure.math.numeric-tower :as math]) 
   (:refer-clojure))
 
@@ -34,7 +36,14 @@
           (int-array (count lhs))
           (range (count lhs))))
 
-(defn rotate [four-byte-array]
+(defn rotate [buffer]
+  (let [shunt (.get buffer 0)]
+    (.put buffer 0 (.get buffer 1))
+    (.put buffer 1 (.get buffer 2))
+    (.put buffer 2 (.get buffer 3))
+    (.put buffer 3 shunt)))
+
+#_(defn rotate [four-byte-array]
   (let [shunt (aget four-byte-array 0)]
     (doseq [index (range 1 4)
             :let [value (aget four-byte-array index)]]
@@ -66,4 +75,14 @@
       (aset-int bytes scalar-index value))
     bytes))
 
+(defn fast-buffer [byte-limit]
+  (.asShortBuffer (ByteBuffer/allocateDirect (* 2 byte-limit))))
 
+(defn fast-buffer-from [seq]
+  (let [buffer (fast-buffer (count seq))]
+    (doseq [index (range (count seq))]
+      (.put buffer (short (nth seq index))))
+    buffer))
+
+(defn equal-buffers? [lhs rhs]
+  (Arrays/equals (.array lhs) (.array rhs)))

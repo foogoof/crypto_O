@@ -15,6 +15,8 @@
             [crypto_O.galois-field :as galois])
   (:refer-clojure))
 
+(def bytes-per-key (/ 128 8))
+
 (declare expand-key expand-key-inner s-box flip-keys)
 
 (defn substitute-bytes [bytes]
@@ -67,7 +69,7 @@
 
 (defn get-key [bytes key-index]
   (let [starting-index (* 16 key-index)]
-   (Arrays/copyOfRange bytes starting-index (+ 16 starting-index))))
+    (Arrays/copyOfRange bytes starting-index (+ 16 starting-index))))
 
 (defn encrypt [key data]
   (let [raw-state (Arrays/copyOf data 16)
@@ -88,12 +90,18 @@
             (decrypt-first-round initial-state (get-key keys 1))
             (range 2 11))))
 
-(defn expand-key [input]
-  (let [output (int-array (* 11 16))]
-    (doseq [index (range 16)
-            :let [value (aget input index)]]
-      (aset-int output index value))
-    (expand-key-inner input output)))
+(defn make-key []
+  (core/fast-buffer bytes-per-key))
+
+(defn make-round-keys []
+  (core/fast-buffer (* 11 bytes-per-key)))
+
+(defn expand-key [key]
+  (let [round-keys (make-round-keys)]
+    (.put round-keys key)
+    (expand-key-inner key round-keys)
+    (.rewind key)
+    (.rewind round-keys)))
 
 (defn s-box-rotate [s_x _]
   (let [{:keys [s x]} s_x
@@ -109,17 +117,16 @@
 
 (defn schedule-core-loop [ioput]
   (doseq [index (range 4)
-          :let [raw-value (aget ioput index)
+          :let [raw-value (.get ioput index)
                 s-box-value (s-box raw-value)]]
-    (aset-int ioput index s-box-value)))
+    (.put ioput index s-box-value)))
 
-(defn schedule-core [ioput index]
-  (core/rotate ioput)
-  (schedule-core-loop ioput)
-  (aset-int ioput
-            0
-            (bit-xor (aget ioput 0)
-                     (galois/rcon index))))
+(defn schedule-core [state index]
+  (core/rotate state)
+  (schedule-core-loop state)
+  (.put state
+        0
+        (bit-xor (.get state 0) (galois/rcon index))))
 
 (defn write-key [output output-position state]
   (doseq [state-index (range 4)
@@ -131,29 +138,36 @@
               output-write-index
               (bit-xor state-val output-val))))
 
-(defn refresh-state [state input input-index]
-  (doseq [state-index (range 4)
-          :let [read-index (+ state-index input-index)]]
-    (aset-int state
-              state-index
-              (aget input (- read-index 4)))))
+(defn refresh-state [state round-keys]
+  (let [shunt (short-array 4)]
+    (.rewind state)
+    (.position round-keys (- (.position round-keys) 4))
+    (.get round-keys shunt)
+    (.put state shunt)))
 
-(defn expand-key-inner [input output]
-  (let [state (int-array 4)]
-    (doseq [output-index (range 16 176 4)]
-      (refresh-state state output output-index)
-      (if (= 0 (mod output-index 16))
-        (schedule-core state (/ output-index 16)))
-      (write-key output output-index state))
-    output))
+(defn write-partial-key [round-keys state]
+  (doseq [_ (range 4)]
+    (.rewind state)
+    (.put round-keys
+          (short (bit-xor (.get state) (.get round-keys))))))
+
+(defn expand-key-inner [key round-keys]
+  (let [state (core/fast-buffer 4)]
+    (doseq [_ (range 1 11)]
+      (refresh-state state round-keys)
+      (if (= 0 (mod (.position round-keys) 16))
+        (schedule-core state (/ (.position round-keys) 16)))
+      (write-partial-key round-keys state))))
 
 (defn split-keys [keys]
   (map #(Arrays/copyOfRange keys (* 16 %) (+ 16 (* 16 %)))
        (range 11)))
 
 (defn flip-keys [keys]
-  (-> keys
-      split-keys
-      reverse
-      concat
-      int-array))
+  #_(-> keys
+        split-keys
+        reverse
+        concat
+        int-array)
+  []
+  )
