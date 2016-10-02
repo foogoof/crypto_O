@@ -9,12 +9,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (ns crypto_O.aes-128
-  (:import [java.util Arrays])
+  (:import [java.util Arrays]
+           [java.nio IntBuffer])
   (:require [crypto_O.core :as core]
             [crypto_O.galois-field :as galois])
   (:refer-clojure))
 
-(declare expand-key expand-key-inner s-box)
+(declare expand-key expand-key-inner s-box flip-keys)
 
 (defn substitute-bytes [bytes]
   (reduce (fn [memo index]
@@ -51,9 +52,18 @@
       shift-rows
       (core/byte-xor key)))
 
-(defn decrypt-first-round [byte key])
+(defn decrypt-first-round [bytes key]
+  (-> bytes
+      shift-rows
+      substitute-bytes
+      (core/byte-xor key)))
 
-(defn decrypt-last-rounds [byte key])
+(defn decrypt-last-rounds [bytes key]
+  (-> bytes
+      mix-columns
+      shift-rows
+      substitute-bytes
+      (core/byte-xor key)))
 
 (defn get-key [bytes key-index]
   (let [starting-index (* 16 key-index)]
@@ -71,7 +81,7 @@
 
 (defn decrypt [key data]
   (let [raw-state (Arrays/copyOf data 16)
-        keys (int-array (reverse (expand-key key))) ; FIXME: can't be good for perf
+        keys (flip-keys (expand-key key))
         initial-state (core/byte-xor raw-state (get-key keys 0))]
     (reduce (fn [prior-round current-round-index]
               (decrypt-last-rounds prior-round (get-key keys current-round-index)))
@@ -136,3 +146,14 @@
         (schedule-core state (/ output-index 16)))
       (write-key output output-index state))
     output))
+
+(defn split-keys [keys]
+  (map #(Arrays/copyOfRange keys (* 16 %) (+ 16 (* 16 %)))
+       (range 11)))
+
+(defn flip-keys [keys]
+  (-> keys
+      split-keys
+      reverse
+      concat
+      int-array))

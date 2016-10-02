@@ -9,9 +9,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (ns crypto_O.core
-  (:import [java.nio ByteBuffer]
-           [java.nio.file Files FileSystem FileSystems]
-           [java.security MessageDigest])
   (:require [clojure.math.numeric-tower :as math]) 
   (:refer-clojure))
 
@@ -68,3 +65,5 @@
                   value (aget column row-index)]]
       (aset-int bytes scalar-index value))
     bytes))
+
+
