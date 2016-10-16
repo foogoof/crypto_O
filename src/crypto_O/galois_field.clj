@@ -47,30 +47,32 @@
         prior-values (core/fast-buffer 4)]
     (dotimes [index 4]
       (.put prior-values index (.get bytes (nth column-indexes index))))
+    
     (.put bytes
           (nth column-indexes 0)
-          (bit-xor (multiply (nth prior-values 0) 2)
-                   (multiply (nth prior-values 3) 1)
-                   (multiply (nth prior-values 2) 1)
-                   (multiply (nth prior-values 1) 3)))
+          (bit-xor (multiply (.get prior-values 0) 2)
+                   (multiply (.get prior-values 3) 1)
+                   (multiply (.get prior-values 2) 1)
+                   (multiply (.get prior-values 1) 3)))
     (.put bytes
           (nth column-indexes 1)
-          (bit-xor (multiply (nth prior-values 1) 2)
-                   (multiply (nth prior-values 0) 1)
-                   (multiply (nth prior-values 3) 1)
-                   (multiply (nth prior-values 2) 3)))
+          (bit-xor (multiply (.get prior-values 1) 2)
+                   (multiply (.get prior-values 0) 1)
+                   (multiply (.get prior-values 3) 1)
+                   (multiply (.get prior-values 2) 3)))
     (.put bytes
           (nth column-indexes 2)
-          (bit-xor (multiply (nth prior-values 2) 2)
-                   (multiply (nth prior-values 1) 1)
-                   (multiply (nth prior-values 0) 1)
-                   (multiply (nth prior-values 3) 3)))
+          (bit-xor (multiply (.get prior-values 2) 2)
+                   (multiply (.get prior-values 1) 1)
+                   (multiply (.get prior-values 0) 1)
+                   (multiply (.get prior-values 3) 3)))
     (.put bytes
           (nth column-indexes 3)
-          (bit-xor (multiply (nth prior-values 3) 2)
-                   (multiply (nth prior-values 2) 1)
-                   (multiply (nth prior-values 1) 1)
-                   (multiply (nth prior-values 0) 3)))))
+          (bit-xor (multiply (.get prior-values 3) 2)
+                   (multiply (.get prior-values 2) 1)
+                   (multiply (.get prior-values 1) 1)
+                   (multiply (.get prior-values 0) 3))))
+  bytes)
 
 (def atable [0x01 0xe5 0x4c 0xb5 0xfb 0x9f 0xfc 0x12 
              0x03 0x34 0xd4 0xc4 0x16 0xba 0x1f 0x36 

@@ -21,10 +21,12 @@
 
 (defn substitute-bytes [block]
   (doseq [index (range (.limit block))]
-    (.put block index (s-box (.get block index)))))
+    (.put block index (s-box (.get block index))))
+  block)
 
 (defn extract-row [bytes row-index]
-  (let [row (.limit 4 (.slice bytes))]
+  (core/trace-buffer "er" bytes)
+  (let [row (.limit (.slice bytes) 4)]
     (.position bytes (+ 4 (.position bytes)))
     row))
 
@@ -35,24 +37,28 @@
         core/rotate)
     (-> (core/rotate (nth rows 3))
         core/rotate
-        core/rotate)))
+        core/rotate))
+  bytes)
 
 (defn mix-columns [bytes]
   (doseq [index (range 4)]
-    (galois/mix-column bytes index)))
+    (galois/mix-column bytes index))
+  bytes)
 
 (defn encrypt-first-rounds [bytes key]
   (-> bytes
       substitute-bytes
       shift-rows
       mix-columns
-      (core/byte-xor key)))
+      (core/byte-xor key)
+      (.rewind)))
 
 (defn encrypt-last-round [bytes key]
   (-> bytes
       substitute-bytes
       shift-rows
-      (core/byte-xor key)))
+      (core/byte-xor key)
+      (.rewind)))
 
 (defn decrypt-first-round [bytes key]
   (-> bytes
