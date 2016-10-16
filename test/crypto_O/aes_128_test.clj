@@ -78,25 +78,8 @@
     (is (.equals menchito-expanded
                  (expand-key (ShortBuffer/wrap (short-array [0x69 0x20 0xe2 0x99 0xa5 0x20 0x2a 0x6d 0x65 0x6e 0x63 0x68 0x69 0x74 0x6f 0x2a])))))))
 
-#_(deftest test-roundtrip
+(deftest test-roundtrip
   (testing "decrypting encryption"
-    (Arrays/fill input (int 0xFF))
-    (Arrays/fill key (int 0x00))
-    (is (Arrays/equals input
-                       (decrypt key (encrypt key input))))))
-
-#_(deftest test-key-immutability
-  (testing "key is immutable"
-    (Arrays/fill input (int 0xFF))
-    (Arrays/fill key (int 0x00))
-    (let [key-hash (hash key)]
-      (decrypt key (encrypt key input))
-      (is (= key-hash (hash key))))))
-
-#_(deftest test-input-immutability
-  (testing "input is immutable"
-    (Arrays/fill input (int 0xFF))
-    (Arrays/fill key (int 0x00))
-    (let [input-hash (hash input)]
-      (decrypt key (encrypt key input))
-      (is (= input-hash (hash input))))))
+    (let [key (ShortBuffer/wrap (short-array [0xff 0xff 0xff 0xff 0xff 0xff 0xff 0xff 0xff 0xff 0xff 0xff 0xff 0xff 0xff 0xff]))
+          data (ShortBuffer/wrap (short-array [0x69 0x20 0xe2 0x99 0xa5 0x20 0x2a 0x6d 0x65 0x6e 0x63 0x68 0x69 0x74 0x6f 0x2a]))]
+      (is (.equals data (decrypt-block key (encrypt-block key data)))))))

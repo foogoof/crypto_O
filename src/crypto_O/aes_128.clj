@@ -19,27 +19,27 @@
 
 (declare expand-key expand-key-inner s-box flip-keys)
 
-(defn substitute-bytes [bytes]
-  (reduce (fn [memo index]
-            (aset-int memo index (s-box (aget memo index)))
-            memo)
-          (int-array (count bytes))
-          (range (count bytes))))
+(defn substitute-bytes [block]
+  (doseq [index (range (.limit block))]
+    (.put block index (s-box (.get block index)))))
+
+(defn extract-row [bytes row-index]
+  (let [row (.limit 4 (.slice bytes))]
+    (.position bytes (+ 4 (.position bytes)))
+    row))
 
 (defn shift-rows [bytes]
-  (let [row0 (int-array (Arrays/copyOfRange bytes 0 4))
-        row1 (int-array (Arrays/copyOfRange bytes 4 8))
-        row2 (int-array (Arrays/copyOfRange bytes 8 12))
-        row3 (int-array (Arrays/copyOfRange bytes 12 16))]
-    (doseq [row [row1 row2 row2 row3 row3 row3]]
-      (core/rotate row))
-    (int-array (concat row0 row1 row2 row3))))
+  (let [rows (map (fn [index] (extract-row bytes index)) (range 4))]
+    (core/rotate (nth rows 1))
+    (-> (core/rotate (nth rows 2))
+        core/rotate)
+    (-> (core/rotate (nth rows 3))
+        core/rotate
+        core/rotate)))
 
 (defn mix-columns [bytes]
-  (let [columns (core/bytes-to-columns bytes)]
-    (doseq [index (range 4)]
-      (galois/mix-column (nth columns index)))
-    (core/columns-to-bytes columns)))
+  (doseq [index (range 4)]
+    (galois/mix-column bytes index)))
 
 (defn encrypt-first-rounds [bytes key]
   (-> bytes
@@ -67,22 +67,21 @@
       substitute-bytes
       (core/byte-xor key)))
 
-(defn get-key [bytes key-index]
-  (let [starting-index (* 16 key-index)]
-    (Arrays/copyOfRange bytes starting-index (+ 16 starting-index))))
+(defn get-key [keys key-index]
+  (.position keys (* key-index bytes-per-key))
+  (.limit (.slice keys) bytes-per-key))
 
-(defn encrypt [key data]
-  (let [raw-state (Arrays/copyOf data 16)
-        keys  (expand-key key)
-        initial-state (core/byte-xor raw-state (get-key keys 0))]
-    (-> (reduce (fn [memo round-index]
-                  (encrypt-first-rounds memo (get-key keys round-index)))
-                initial-state
-                (range 1 10))
-        (encrypt-last-round (get-key keys 10)))))
+(defn encrypt-block [key block]
+  (let [raw-state (core/fast-buffer-block)
+        keys (expand-key key)
+        state (core/byte-xor raw-state (get-key keys 0))]
+    (doseq [round (range 1 10)
+            :let [round-key (get-key keys round)]]
+      (encrypt-first-rounds state key))
+    (encrypt-last-round state (get-key keys 10))))
 
-(defn decrypt [key data]
-  (let [raw-state (Arrays/copyOf data 16)
+(defn decrypt-block [key block]
+  (let [raw-state (Arrays/copyOf block 16)
         keys (flip-keys (expand-key key))
         initial-state (core/byte-xor raw-state (get-key keys 0))]
     (reduce (fn [prior-round current-round-index]
@@ -142,7 +141,7 @@
 (defn refresh-state [state round-keys]
   (.rewind state)
   (.position round-keys (- (.position round-keys) 4))
-  (doseq [_ (range 4)]
+  (dotimes [_ 4]
     (.put state (.get round-keys)))
   (.rewind state))
 
@@ -159,7 +158,7 @@
 
 (defn expand-key-inner [key round-keys]
   (let [state (core/fast-buffer 4)]
-    (doseq [_ (range 0 40)]
+    (dotimes [_ (* 4 10)]
       (refresh-state state round-keys)
       (if (= 0 (mod (.position round-keys) 16))
         (schedule-core state (/ (.position round-keys) 16)))

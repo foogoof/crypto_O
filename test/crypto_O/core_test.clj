@@ -15,15 +15,17 @@
 
 (deftest test-four-byte-xor
   (testing "smoketest xoring 4 bytes"
-    (let [lhs (int-array [0xFF 0xFF 0xFF 0xFF])
-          rhs (int-array [0xF0 0x0F 0x77 0x01])]
-      (is (Arrays/equals (byte-xor lhs rhs)
-                         (int-array  [0x0F 0xF0 0x88 0xFE]))))))
+    (let [lhs (fast-buffer-from [0xF0 0x0F 0x77 0x01])
+          rhs (fast-buffer-from [0xFF 0xFF 0xFF 0xFF])]
+      (is (.equals (byte-xor lhs rhs)
+                   (fast-buffer-from [0x0F 0xF0 0x88 0xFE]))))))
 
 ;;; yes this is cheesy... want minimal coverage outside the expected happy path before test.checking
 (deftest test-one-byte-xor
   (testing "smoketest xoring 1 bytes"
-    (let [lhs (int-array [0xFF])
-          rhs (int-array [0xF0])]
-      (is (Arrays/equals (byte-xor lhs rhs)
-                         (int-array  [0x0F]))))))
+    (let [lhs (fast-buffer 1)
+          rhs (fast-buffer 1)]
+      (.put lhs (short 0xFF))
+      (.put rhs (short 0xF0))
+      (is (.equals (byte-xor lhs rhs)
+                   (fast-buffer-from [0x0F]))))))

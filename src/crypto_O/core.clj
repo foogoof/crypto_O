@@ -35,14 +35,12 @@
   (int (bit-and 0xff
                 (* (math/expt 2 bits) byte))))
 
-(defn byte-xor [lhs rhs]
-  (reduce (fn [memo index]
-            (aset-int memo
-                      index
-                      (bit-xor (aget lhs index) (aget rhs index)))
-            memo)
-          (int-array (count lhs))
-          (range (count lhs))))
+(defn byte-xor [ioput rhs]
+  (doseq [index (range (.limit rhs))
+          :let [left-val (.get ioput index)
+                right-val (.get rhs index)]]
+    (.put ioput index (short (bit-xor left-val right-val))))
+  ioput)
 
 (defn rotate [buffer]
   (let [shunt (.get buffer 0)]
@@ -50,14 +48,6 @@
     (.put buffer 1 (.get buffer 2))
     (.put buffer 2 (.get buffer 3))
     (.put buffer 3 shunt)))
-
-#_(defn rotate [four-byte-array]
-  (let [shunt (aget four-byte-array 0)]
-    (doseq [index (range 1 4)
-            :let [value (aget four-byte-array index)]]
-      (aset-int four-byte-array (dec index) value))
-    (aset-int four-byte-array 3 shunt)
-    four-byte-array))
 
 (defn- extract-column [bytes row-index]
   (let [column (int-array 4)]
@@ -86,6 +76,9 @@
 (defn fast-buffer [byte-limit]
   (.asShortBuffer (ByteBuffer/allocateDirect (* 2 byte-limit))))
 
+(defn fast-buffer-block []
+  (fast-buffer (* 8 16)))
+
 (defn fast-buffer-from [seq]
   (let [buffer (fast-buffer (count seq))]
     (doseq [index (range (count seq))]
@@ -94,3 +87,8 @@
 
 (defn equal-buffers? [lhs rhs]
   (Arrays/equals (.array lhs) (.array rhs)))
+
+(defn byte-indexes [column-index column-width]
+  (map (fn [cell-index] (+ (* column-index column-width)
+                           cell-index))
+       (range column-width)))
