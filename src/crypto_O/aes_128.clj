@@ -64,14 +64,16 @@
   (-> bytes
       shift-rows
       substitute-bytes
-      (core/byte-xor key)))
+      (core/byte-xor key)
+      (.rewind)))
 
 (defn decrypt-last-rounds [bytes key]
   (-> bytes
       mix-columns
       shift-rows
       substitute-bytes
-      (core/byte-xor key)))
+      (core/byte-xor key)
+      (.rewind)))
 
 (defn get-key [keys key-index]
   (.position keys (* key-index bytes-per-key))
@@ -86,17 +88,16 @@
       (encrypt-first-rounds state key))
     (encrypt-last-round state (get-key keys 10))))
 
+;;; keys would be much better as a proper Clojure sequence
+
 (defn decrypt-block [key block]
-  (let [raw-state (Arrays/copyOf block 16)
+  (let [raw-state (core/fast-buffer-block)
         keys (flip-keys (expand-key key))
-        initial-state (core/byte-xor raw-state (get-key keys 0))]
+        initial-state (core/byte-xor raw-state (get-key keys 0))]  ; need to read from block!
     (reduce (fn [prior-round current-round-index]
               (decrypt-last-rounds prior-round (get-key keys current-round-index)))
             (decrypt-first-round initial-state (get-key keys 1))
             (range 2 11))))
-
-(defn make-key []
-  (core/fast-buffer bytes-per-key))
 
 (defn make-round-keys []
   (core/fast-buffer (* 11 bytes-per-key)))
@@ -170,15 +171,12 @@
         (schedule-core state (/ (.position round-keys) 16)))
       (write-partial-key round-keys state))))
 
-(defn split-keys [keys]
-  (map #(Arrays/copyOfRange keys (* 16 %) (+ 16 (* 16 %)))
-       (range 11)))
-
 (defn flip-keys [keys]
-  #_(-> keys
-        split-keys
-        reverse
-        concat
-        int-array)
-  []
-  )
+  (let [output (make-round-keys)
+        shunt (short-array bytes-per-key)]
+    (doseq [index (range 11)
+            :let [read-index (* bytes-per-key (- 10 index))]]
+      (.position keys read-index)
+      (.get keys shunt)
+      (.put output shunt))
+    output))
